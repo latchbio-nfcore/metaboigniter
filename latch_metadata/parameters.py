@@ -1,0 +1,492 @@
+
+from dataclasses import dataclass
+import typing
+import typing_extensions
+
+from flytekit.core.annotation import FlyteAnnotation
+
+from latch.types.metadata import NextflowParameter
+from latch.types.file import LatchFile
+from latch.types.directory import LatchDir, LatchOutputDir
+
+# Import these into your `__init__.py` file:
+#
+# from .parameters import generated_parameters
+
+generated_parameters = {
+    'requantification': NextflowParameter(
+        type=typing.Optional[bool],
+        default=None,
+        section_title='Generic controls',
+        description='If set to true, requantification will be performed',
+    ),
+    'identification': NextflowParameter(
+        type=typing.Optional[bool],
+        default=None,
+        section_title=None,
+        description='If set to true, identification will be performed. Remember to set identification specific parameters',
+    ),
+    'polarity': NextflowParameter(
+        type=typing.Optional[str],
+        default='positive',
+        section_title=None,
+        description='Polarity of the data',
+    ),
+    'parallel_linking': NextflowParameter(
+        type=typing.Optional[bool],
+        default=None,
+        section_title=None,
+        description='If set, the linking will be performed in parallel, see nr_partitions in linking',
+    ),
+    'ms2_collection_model': NextflowParameter(
+        type=typing.Optional[str],
+        default='paired',
+        section_title=None,
+        description='Set wether the MS2 collections have been done on all the MS1 data. If there is a separate MS2 file, set to separate',
+    ),
+    'mz_tolerance_pyopenms': NextflowParameter(
+        type=typing.Optional[float],
+        default=20,
+        section_title='Mapping and Identification',
+        description='mz tolerance (ppm) for finding C13',
+    ),
+    'rt_tolerance_pyopenms': NextflowParameter(
+        type=typing.Optional[float],
+        default=5,
+        section_title=None,
+        description='rt tolerance for finding C13',
+    ),
+    'ms2_use_feature_ionization': NextflowParameter(
+        type=typing.Optional[bool],
+        default=None,
+        section_title=None,
+        description='If set, detected adduct will be used in identification',
+    ),
+    'sirius_sirius_ppm_max': NextflowParameter(
+        type=typing.Optional[float],
+        default=10,
+        section_title=None,
+        description='Maximum allowed mass deviation in ppm for decomposing  masses (ppm)',
+    ),
+    'sirius_sirius_ppm_max_ms2': NextflowParameter(
+        type=typing.Optional[float],
+        default=10,
+        section_title=None,
+        description='Maximum allowed mass deviation in ppm for decomposing masses in MS2 (ppm).If not specified, the same value as for the MS1 is used.',
+    ),
+    'sirius_sirius_no_recalibration': NextflowParameter(
+        type=typing.Optional[bool],
+        default=None,
+        section_title=None,
+        description='Disable recalibration of input spectra',
+    ),
+    'sirius_sirius_profile': NextflowParameter(
+        type=typing.Optional[str],
+        default='default',
+        section_title=None,
+        description='Name of the configuration profile',
+    ),
+    'sirius_sirius_candidates': NextflowParameter(
+        type=typing.Optional[int],
+        default=10,
+        section_title=None,
+        description='The number of formula candidates in the SIRIUS output',
+    ),
+    'sirius_sirius_candidates_per_ion': NextflowParameter(
+        type=typing.Optional[int],
+        default=1,
+        section_title=None,
+        description='Minimum number of candidates in the output for each ionization. Set to force output of results for each possible ionization, even if not part of highest ranked results.',
+    ),
+    'sirius_sirius_ions_considered': NextflowParameter(
+        type=typing.Optional[str],
+        default='[M+H]+,[M+K]+,[M+Na]+,[M+H-H2O]+,[M+H-H4O2]+,[M+NH4]+,[M-H]-,[M+Cl]-,[M-H2O-H]-,[M+Br]-',
+        section_title=None,
+        description='the iontype/adduct of the MS/MS data. Example: [M+H]+, [M-H]-, [M+Cl]-, [M+Na]+, [M]+. You can also provide a comma separated list of adducts.',
+    ),
+    'sirius_sirius_db': NextflowParameter(
+        type=typing.Optional[str],
+        default=None,
+        section_title=None,
+        description='Search formulas in the Union of the given databases db-name1,db-name2,db-name3. If no database is given all possible molecular formulas will be respected (no database is used). Example: possible DBs: ALL,BIO,PUBCHEM,MESH,HMDB,KNAPSACK,CHEBI,PUBMED,KEGG,HSDB,MACONDA,METACYC,GNPS,ZINCBIO,UNDP,YMDB,PLANTCYC,NORMAN,ADDITIONAL,PUBCHEMANNOTATIONBIO,PUBCHEMANNOTATIONDRUG,PUBCHEMANNOTATIONSAFETYANDTOXIC,PUBCHEMANNOTATIONFOOD,KEGGMINE,ECOCYCMINE,YMDBMINE',
+    ),
+    'sirius_runpassatutto': NextflowParameter(
+        type=typing.Optional[bool],
+        default=None,
+        section_title=None,
+        description='If set, passatutto will be run',
+    ),
+    'sirius_fingerid_db': NextflowParameter(
+        type=typing.Optional[str],
+        default=None,
+        section_title=None,
+        description='Search structures in the Union of the given databases db-name1,db-name2,db-name3. If no database is given all possible molecular formulas will be respected (no database is used). Example: possible DBs: ALL,BIO,PUBCHEM,MESH,HMDB,KNAPSACK,CHEBI,PUBMED,KEGG,HSDB,MACONDA,METACYC,GNPS,ZINCBIO,UNDP,YMDB,PLANTCYC,NORMAN,ADDITIONAL,PUBCHEMANNOTATIONBIO,PUBCHEMANNOTATIONDRUG,PUBCHEMANNOTATIONSAFETYANDTOXIC,PUBCHEMANNOTATIONFOOD,KEGGMINE,ECOCYCMINE,YMDBMINE',
+    ),
+    'sirius_email': NextflowParameter(
+        type=typing.Optional[str],
+        default=None,
+        section_title=None,
+        description='E-mail for your SIRIUS account.',
+    ),
+    'sirius_password': NextflowParameter(
+        type=typing.Optional[str],
+        default=None,
+        section_title=None,
+        description='Password for your SIRIUS account.',
+    ),
+    'sirius_split': NextflowParameter(
+        type=typing.Optional[bool],
+        default=None,
+        section_title=None,
+        description='If set, SIRIUS will be run in parallel. See mgf_splitmgf_pyopenms parameter for segmentation',
+    ),
+    'split_consensus_parts': NextflowParameter(
+        type=typing.Optional[int],
+        default=20,
+        section_title=None,
+        description='For running MS2 mapping in parallel set this higher than 1',
+    ),
+    'run_ms2query': NextflowParameter(
+        type=typing.Optional[bool],
+        default=None,
+        section_title=None,
+        description='If set, MS2Query will be run',
+    ),
+    'sirius_runfid': NextflowParameter(
+        type=typing.Optional[bool],
+        default=None,
+        section_title=None,
+        description='If set, FingerID will be run. This has to be run together with run_sirius',
+    ),
+    'run_sirius': NextflowParameter(
+        type=typing.Optional[bool],
+        default=None,
+        section_title=None,
+        description='If set SIRIUS will run',
+    ),
+    'algorithm_metabolitefeaturedeconvolution_charge_min_metaboliteadductdecharger_openms': NextflowParameter(
+        type=typing.Optional[int],
+        default=1,
+        section_title='Annotation',
+        description='Minimal possible charge',
+    ),
+    'algorithm_metabolitefeaturedeconvolution_charge_max_metaboliteadductdecharger_openms': NextflowParameter(
+        type=typing.Optional[int],
+        default=1,
+        section_title=None,
+        description='Maximal possible charge',
+    ),
+    'algorithm_metabolitefeaturedeconvolution_charge_span_max_metaboliteadductdecharger_openms': NextflowParameter(
+        type=typing.Optional[int],
+        default=1,
+        section_title=None,
+        description='Maximal range of charges for a single analyte, i.e. observing q1=[5,6,7] implies span=3. Setting this to 1 will only find adduct variants of the same charge',
+    ),
+    'algorithm_metabolitefeaturedeconvolution_q_try_metaboliteadductdecharger_openms': NextflowParameter(
+        type=typing.Optional[str],
+        default='feature',
+        section_title=None,
+        description="Try different values of charge for each feature according to the above settings ('heuristic' [does not test all charges, just the likely ones] or 'all' ), or leave feature charge untouched ('feature').",
+    ),
+    'algorithm_metabolitefeaturedeconvolution_retention_max_diff_metaboliteadductdecharger_openms': NextflowParameter(
+        type=typing.Optional[float],
+        default=1,
+        section_title=None,
+        description='Maximum allowed RT difference between any two features if their relation shall be determined',
+    ),
+    'algorithm_metabolitefeaturedeconvolution_retention_max_diff_local_metaboliteadductdecharger_openms': NextflowParameter(
+        type=typing.Optional[float],
+        default=1,
+        section_title=None,
+        description="Maximum allowed RT difference between between two co-features, after adduct shifts have been accounted for (if you do not have any adduct shifts, this value should be equal to 'retention_max_diff', otherwise it should be smaller!)",
+    ),
+    'algorithm_metabolitefeaturedeconvolution_mass_max_diff_metaboliteadductdecharger_openms': NextflowParameter(
+        type=typing.Optional[float],
+        default=5,
+        section_title=None,
+        description='Maximum allowed mass tolerance per feature. Defines a symmetric tolerance window around the feature. When looking at possible feature pairs, the allowed feature-wise errors are combined for consideration of possible adduct shifts. For ppm tolerances, each window is based on the respective observed feature mz (instead of putative experimental mzs causing the observed one)!',
+    ),
+    'algorithm_metabolitefeaturedeconvolution_unit_metaboliteadductdecharger_openms': NextflowParameter(
+        type=typing.Optional[str],
+        default='ppm',
+        section_title=None,
+        description="Unit of the 'max_difference' parameter",
+    ),
+    'algorithm_metabolitefeaturedeconvolution_max_neutrals_metaboliteadductdecharger_openms': NextflowParameter(
+        type=typing.Optional[int],
+        default=1,
+        section_title=None,
+        description="Maximal number of neutral adducts(q=0) allowed. Add them in the 'potential_adducts' section!",
+    ),
+    'algorithm_metabolitefeaturedeconvolution_use_minority_bound_metaboliteadductdecharger_openms': NextflowParameter(
+        type=typing.Optional[bool],
+        default=True,
+        section_title=None,
+        description='Prune the considered adduct transitions by transition probabilities.',
+    ),
+    'algorithm_metabolitefeaturedeconvolution_max_minority_bound_metaboliteadductdecharger_openms': NextflowParameter(
+        type=typing.Optional[int],
+        default=1,
+        section_title=None,
+        description="Limits allowed adduct compositions and changes between compositions in the underlying graph optimization problem by introducing a probability-based threshold: the minority bound sets the maximum count of the least probable adduct (according to 'potential_adducts' param) within a charge variant with maximum charge only containing the most likely adduct otherwise. E.g., for 'charge_max' 4 and 'max_minority_bound' 2 with most probable adduct being H+ and least probable adduct being Na+, this will allow adduct compositions of '2(H+),2(Na+)' but not of '1(H+),3(Na+)'. Further, adduct compositions/changes less likely than '2(H+),2(Na+)' will be discarded as well.",
+    ),
+    'algorithm_metabolitefeaturedeconvolution_min_rt_overlap_metaboliteadductdecharger_openms': NextflowParameter(
+        type=typing.Optional[float],
+        default=0.66,
+        section_title=None,
+        description="Minimum overlap of the convex hull' RT intersection measured against the union from two features (if CHs are given)",
+    ),
+    'algorithm_metabolitefeaturedeconvolution_intensity_filter_metaboliteadductdecharger_openms': NextflowParameter(
+        type=typing.Optional[bool],
+        default=None,
+        section_title=None,
+        description='Enable the intensity filter, which will only allow edges between two equally charged features if the intensity of the feature with less likely adducts is smaller than that of the other feature. It is not used for features of different charge.',
+    ),
+    'adducts_pos': NextflowParameter(
+        type=typing.Optional[str],
+        default='H:+:0.6 Na:+:0.1 NH4:+:0.1 H-1O-1:+:0.1 H-3O-2:+:0.1',
+        section_title=None,
+        description='possible positive adducts for adduct detection in the format of adduct:charge:probablity',
+    ),
+    'adducts_neg': NextflowParameter(
+        type=typing.Optional[str],
+        default='H-1:-:0.8 H-3O-1:-:0.2',
+        section_title=None,
+        description='possible negative adducts for adduct detection in the format of adduct:charge:probablity',
+    ),
+    'algorithm_max_num_peaks_considered_mapalignerposeclustering_openms': NextflowParameter(
+        type=typing.Optional[int],
+        default=1000,
+        section_title='Alignment and Linking',
+        description="The maximal number of peaks/features to be considered per map. To use all, set to '-1'.",
+    ),
+    'algorithm_superimposer_mz_pair_max_distance_mapalignerposeclustering_openms': NextflowParameter(
+        type=typing.Optional[float],
+        default=0.5,
+        section_title=None,
+        description='Maximum of m/z deviation of corresponding elements in different maps.  This condition applies to the pairs considered in hashing.',
+    ),
+    'algorithm_superimposer_num_used_points_mapalignerposeclustering_openms': NextflowParameter(
+        type=typing.Optional[int],
+        default=2000,
+        section_title=None,
+        description='Maximum number of elements considered in each map (selected by intensity).  Use this to reduce the running time and to disregard weak signals during alignment.  For using all points, set this to -1.',
+    ),
+    'algorithm_pairfinder_ignore_charge_mapalignerposeclustering_openms': NextflowParameter(
+        type=typing.Optional[bool],
+        default=None,
+        section_title=None,
+        description="false [default]: pairing requires equal charge state (or at least one unknown charge '0'); true: Pairing irrespective of charge state",
+    ),
+    'algorithm_pairfinder_distance_rt_max_difference_mapalignerposeclustering_openms': NextflowParameter(
+        type=typing.Optional[float],
+        default=100.0,
+        section_title=None,
+        description='Never pair features with a larger RT distance (in seconds).',
+    ),
+    'algorithm_pairfinder_distance_mz_max_difference_mapalignerposeclustering_openms': NextflowParameter(
+        type=typing.Optional[float],
+        default=0.3,
+        section_title=None,
+        description="Never pair features with larger m/z distance (unit defined by 'unit')",
+    ),
+    'algorithm_pairfinder_distance_mz_unit_mapalignerposeclustering_openms': NextflowParameter(
+        type=typing.Optional[str],
+        default='Da',
+        section_title=None,
+        description="Unit of the 'max_difference' parameter",
+    ),
+    'algorithm_mz_unit_featurelinkerunlabeledkd_openms': NextflowParameter(
+        type=typing.Optional[str],
+        default='ppm',
+        section_title=None,
+        description='Unit of m/z tolerance',
+    ),
+    'algorithm_nr_partitions_featurelinkerunlabeledkd_openms': NextflowParameter(
+        type=typing.Optional[int],
+        default=100,
+        section_title=None,
+        description='Number of partitions in m/z space',
+    ),
+    'algorithm_warp_enabled_featurelinkerunlabeledkd_openms': NextflowParameter(
+        type=typing.Optional[bool],
+        default=True,
+        section_title=None,
+        description='Whether or not to internally warp feature RTs using LOWESS transformation before linking (reported RTs in results will always be the original RTs)',
+    ),
+    'algorithm_warp_rt_tol_featurelinkerunlabeledkd_openms': NextflowParameter(
+        type=typing.Optional[float],
+        default=100.0,
+        section_title=None,
+        description='Width of RT tolerance window (sec)',
+    ),
+    'algorithm_warp_mz_tol_featurelinkerunlabeledkd_openms': NextflowParameter(
+        type=typing.Optional[float],
+        default=5.0,
+        section_title=None,
+        description='m/z tolerance (in ppm or Da)',
+    ),
+    'algorithm_link_rt_tol_featurelinkerunlabeledkd_openms': NextflowParameter(
+        type=typing.Optional[float],
+        default=30,
+        section_title=None,
+        description='Width of RT tolerance window (sec)',
+    ),
+    'algorithm_link_mz_tol_featurelinkerunlabeledkd_openms': NextflowParameter(
+        type=typing.Optional[float],
+        default=10,
+        section_title=None,
+        description='m/z tolerance (in ppm or Da)',
+    ),
+    'algorithm_link_charge_merging_featurelinkerunlabeledkd_openms': NextflowParameter(
+        type=typing.Optional[str],
+        default='With_charge_zero',
+        section_title=None,
+        description='whether to disallow charge mismatches (Identical), allow to link charge zero (i.e., unknown charge state) with every charge state, or disregard charges (Any).',
+    ),
+    'algorithm_link_adduct_merging_featurelinkerunlabeledkd_openms': NextflowParameter(
+        type=typing.Optional[str],
+        default='Any',
+        section_title=None,
+        description='whether to only allow the same adduct for linking (Identical), also allow linking features with adduct-free ones, or disregard adducts (Any).',
+    ),
+    'extract_mz_window_featurefindermetaboident_openms': NextflowParameter(
+        type=typing.Optional[float],
+        default=None,
+        section_title='Re-Quantification',
+        description='m/z window size for chromatogram extraction (unit: ppm if 1 or greater, else Da/Th)',
+    ),
+    'extract_n_isotopes_featurefindermetaboident_openms': NextflowParameter(
+        type=typing.Optional[int],
+        default=None,
+        section_title=None,
+        description='Number of isotopes to include in each peptide assay.',
+    ),
+    'detect_peak_width_featurefindermetaboident_openms': NextflowParameter(
+        type=typing.Optional[float],
+        default=None,
+        section_title=None,
+        description="Expected elution peak width in seconds, for smoothing (Gauss filter). Also determines the RT extration window, unless set explicitly via 'extract:rt_window'.",
+    ),
+    'model_type_featurefindermetaboident_openms': NextflowParameter(
+        type=typing.Optional[str],
+        default='symmetric',
+        section_title=None,
+        description='Type of elution model to fit to features',
+    ),
+    'emgscoring_max_iteration_featurefindermetaboident_openms': NextflowParameter(
+        type=typing.Optional[int],
+        default=None,
+        section_title=None,
+        description='Maximum number of iterations for EMG fitting.',
+    ),
+    'emgscoring_init_mom_featurefindermetaboident_openms': NextflowParameter(
+        type=typing.Optional[bool],
+        default=None,
+        section_title=None,
+        description='Alternative initial parameters for fitting through method of moments.',
+    ),
+    'algorithm_signal_to_noise_peakpickerhires_openms': NextflowParameter(
+        type=typing.Optional[float],
+        default=None,
+        section_title='Quantification',
+        description='Minimal signal-to-noise ratio for a peak to be picked (0.0 disables SNT estimation!)',
+    ),
+    'algorithm_common_noise_threshold_int_featurefindermetabo_openms': NextflowParameter(
+        type=typing.Optional[float],
+        default=10,
+        section_title=None,
+        description='Intensity threshold below which peaks are regarded as noise.',
+    ),
+    'algorithm_common_chrom_peak_snr_featurefindermetabo_openms': NextflowParameter(
+        type=typing.Optional[float],
+        default=3,
+        section_title=None,
+        description='Minimum signal-to-noise a mass trace should have.',
+    ),
+    'algorithm_common_chrom_fwhm_featurefindermetabo_openms': NextflowParameter(
+        type=typing.Optional[float],
+        default=5,
+        section_title=None,
+        description='Expected chromatographic peak width (in seconds).',
+    ),
+    'algorithm_mtd_mass_error_ppm_featurefindermetabo_openms': NextflowParameter(
+        type=typing.Optional[float],
+        default=20,
+        section_title=None,
+        description='Allowed mass deviation (in ppm).',
+    ),
+    'algorithm_mtd_reestimate_mt_sd_featurefindermetabo_openms': NextflowParameter(
+        type=typing.Optional[bool],
+        default=True,
+        section_title=None,
+        description='Enables dynamic re-estimation of m/z variance during mass trace collection stage.',
+    ),
+    'algorithm_mtd_quant_method_featurefindermetabo_openms': NextflowParameter(
+        type=typing.Optional[str],
+        default='area',
+        section_title=None,
+        description="Method of quantification for mass traces. For LC data 'area' is recommended, 'median' for direct injection data. 'max_height' simply uses the most intense peak in the trace.",
+    ),
+    'algorithm_epd_enabled_featurefindermetabo_openms': NextflowParameter(
+        type=typing.Optional[bool],
+        default=True,
+        section_title=None,
+        description='Enable splitting of isobaric mass traces by chromatographic peak detection. Disable for direct injection.',
+    ),
+    'algorithm_epd_width_filtering_featurefindermetabo_openms': NextflowParameter(
+        type=typing.Optional[str],
+        default='fixed',
+        section_title=None,
+        description='Enable filtering of unlikely peak widths. The fixed setting filters out mass traces outside the [min_fwhm, max_fwhm] interval (set parameters accordingly!). The auto setting filters with the 5 and 95% quantiles of the peak width distribution.',
+    ),
+    'algorithm_ffm_enable_rt_filtering_featurefindermetabo_openms': NextflowParameter(
+        type=typing.Optional[bool],
+        default=True,
+        section_title=None,
+        description='Require sufficient overlap in RT while assembling mass traces. Disable for direct injection data..',
+    ),
+    'algorithm_ffm_isotope_filtering_model_featurefindermetabo_openms': NextflowParameter(
+        type=typing.Optional[str],
+        default='metabolites (5% RMS)',
+        section_title=None,
+        description='Remove/score candidate assemblies based on isotope intensities. SVM isotope models for metabolites were trained with either 2% or 5% RMS error. For peptides, an averagine cosine scoring is used. Select the appropriate noise model according to the quality of measurement or MS device.',
+    ),
+    'algorithm_ffm_mz_scoring_13c_featurefindermetabo_openms': NextflowParameter(
+        type=typing.Optional[bool],
+        default=None,
+        section_title=None,
+        description='Use the 13C isotope peak position (~1.003355 Da) as the expected shift in m/z for isotope mass traces (highly recommended for lipidomics!). Disable for general metabolites (as described in Kenar et al. 2014, MCP.).',
+    ),
+    'input': NextflowParameter(
+        type=LatchFile,
+        default=None,
+        section_title='Input/output options',
+        description='Path to comma-separated file containing information about the samples in the experiment.',
+    ),
+    'outdir': NextflowParameter(
+        type=typing_extensions.Annotated[LatchDir, FlyteAnnotation({'output': True})],
+        default=None,
+        section_title=None,
+        description='The output directory where the results will be saved. You have to use absolute paths to storage on Cloud infrastructure.',
+    ),
+    'email': NextflowParameter(
+        type=typing.Optional[str],
+        default=None,
+        section_title=None,
+        description='Email address for completion summary.',
+    ),
+    'multiqc_title': NextflowParameter(
+        type=typing.Optional[str],
+        default=None,
+        section_title=None,
+        description='MultiQC report title. Printed as page header, used for filename if not otherwise specified.',
+    ),
+    'multiqc_methods_description': NextflowParameter(
+        type=typing.Optional[str],
+        default=None,
+        section_title='Generic options',
+        description='Custom MultiQC yaml file containing HTML including a methods description.',
+    ),
+}
+
